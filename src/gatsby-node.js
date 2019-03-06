@@ -1,4 +1,4 @@
-const { PREVIEW_CONTEXT } = require('./lib/const');
+const { PREVIEW_CONTEXT, PREVIEW_PREFIX } = require('./lib/const');
 const gql = require('graphql-tag');
 const traverse = require('traverse');
 const cloneDeep = require('lodash.clonedeep');
@@ -99,10 +99,24 @@ const getIsolatedQuery = (querySource, fieldName, typeName) => {
   return updatedQuery;
 };
 
+exports.onPreInit = () => {
+  const queue = require(`gatsby/dist/internal-plugins/query-runner/query-queue`);
+  const realPush = queue.push;
+
+  // remove any queries that get queued up for our preview pages
+  // - they do not require data as it's fetched from the client instead.
+  queue.push = (arg) => {
+    if (typeof arg.id === 'string' && arg.id.startsWith(PREVIEW_PREFIX)) {
+      arg.query = '';
+    }
+    realPush.bind(queue)(arg);
+  };
+};
+
 exports.onCreatePage = ({ page, actions: { createPage } }) => {
   createPage({
     ...page,
-    path: `/_preview${page.path}`,
+    path: `${PREVIEW_PREFIX}${page.path}`,
     context: {
       ...page.context,
       [PREVIEW_CONTEXT]: getComponentId(page.componentPath),
