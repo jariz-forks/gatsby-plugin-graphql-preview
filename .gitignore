@@ -1,4 +1,2 @@
 node_modules
-/lib
-/gatsby-*.js
-/index.js
+.idea/
